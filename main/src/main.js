@@ -76,6 +76,7 @@ import { registerMicroApps, start } from 'qiankun'
 import microApps from './micro-app'
 // console.log('clientType=B', res)
 // 给子应用配置加上loader方法
+
 const apps = microApps.map(item => {
   // console.log('app', item)
   return {
@@ -100,7 +101,11 @@ registerMicroApps(apps, {
   }]
 })
 start({
-  prefetch: false // 取消预加载
+  prefetch: false, // 取消预加载
+  sandbox: {
+    strictStyleIsolation: true,
+    experimentalStyleIsolation: true
+  }
 })
 
 window.wocwin_qiankun = new Vue({

@@ -4,7 +4,7 @@
   "description": "wocwin主项目",
   "author": "wocwin",
   "scripts": {
-    "serve": "vue-cli-service serve --open --mode dev",
+    "serve": "NODE_OPTIONS=--openssl-legacy-provider && vue-cli-service serve --open --mode dev",
     "prod": "vue-cli-service build --mode prod"
   },
   "husky": {

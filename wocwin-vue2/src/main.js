@@ -19,6 +19,7 @@ import router from "./router"
 import api from "./api" // 接口api
 import moment from "moment"
 import print from 'vue-print-nb'
+import { proxyEvents } from './event'
 
 Vue.use(Tui) // 引入Tui组件
 Vue.use(print)//注册打印插件
@@ -60,6 +61,72 @@ Vue.config.productionTip = false
 // 全局修改el-dialog 默认点击遮照为不关闭
 Element.Dialog.props.closeOnClickModal.default = false
 
+// // fix: 点击事件target为shadow元素的问题
+// const {addEventListener: oldAddEventListener, removeEventListener: oldRemoveEventListener} = document;
+// const fixEvents = ['click', 'mousedown', 'mouseup'];
+// const overrideEventFnMap = {};
+// const setOverrideEvent = (eventName, fn, overrideFn) => {
+//   if (fn === overrideFn) {
+//     return;
+//   }
+//   if (!overrideEventFnMap[eventName]) {
+//     overrideEventFnMap[eventName] = new Map();
+//   }
+//   overrideEventFnMap[eventName].set(fn, overrideFn);
+// };
+// const resetOverrideEvent = (eventName, fn) => {
+//   const eventFn = overrideEventFnMap[eventName]?.get(fn);
+//   if (eventFn) {
+//     overrideEventFnMap[eventName].delete(fn);
+//   }
+//   return eventFn || fn;
+// };
+// document.addEventListener = (event, fn, options) => {
+//   const callback = (e) => {
+//     // 当前事件对象为qiankun盒子，并且当前对象有shadowRoot元素，则fix事件对象为真实元素
+//     if (e.target.id?.startsWith('__qiankun_microapp_wrapper') && e.target?.shadowRoot) {
+//       console.log('zyx++', e.srcElement.shadowRoot.activeElement)
+//       const real = e.srcElement.shadowRoot.activeElement 
+//       fn({...e, target: real ? real : e.target});
+//       //fn(e)
+//       return;
+//     }
+//     fn(e);
+//   };
+//   const eventFn = fixEvents.includes(event) ? callback : fn;
+//   setOverrideEvent(event, fn, eventFn);
+//   Reflect.apply(oldAddEventListener, document, [event, eventFn, options]);
+// };
+// document.removeEventListener = (event, fn, options) => {
+//   const eventFn = resetOverrideEvent(event, fn);
+//   Reflect.apply(oldRemoveEventListener, document, [event, eventFn, options]);
+// };
+
+function fixGetComputedStyle() {
+  // 解决getComputedStyle报错问题
+  let rawGetComputedStyle = window.getComputedStyle;
+  window.getComputedStyle = function (el, pseudoElt) {
+    if (el === document) return { overflow: "auto" };
+    if (el instanceof HTMLElement) {
+      return rawGetComputedStyle(el, pseudoElt);
+    } else {
+      return {}
+    }
+  };
+}
+function fixPopperPosition() {
+  // 解决popper.js定位问题
+  Object.defineProperty(document, 'scrollLeft', {
+      get() {
+          return document.documentElement.scrollLeft;
+      },
+  });
+  Object.defineProperty(document, 'scrollTop', {
+      get() {
+          return document.documentElement.scrollTop;
+      },
+  });
+}
 
 let instance = null;
 export function render(props = {}) {
@@ -97,6 +164,12 @@ export async function bootstrap() {
  * 应用每次进入都会调用 mount 方法，通常我们在这里触发应用的渲染方法
  */
 export async function mount(props) {
+  // document.addEventListener('click', e => {
+  //   console.log('event', e.composedPath())
+  // })
+  proxyEvents()
+  fixGetComputedStyle()
+  fixPopperPosition()
   console.log('应用每次进入都会调用 mount 方法，通常我们在这里触发应用的渲染方法', props)
   props.onGlobalStateChange((state) => {
     console.log('子应用接收的参数', state)
